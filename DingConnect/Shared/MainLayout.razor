@@ -1,19 +1,10 @@
 ﻿@inherits LayoutComponentBase
-
-<PageTitle>DingConnect</PageTitle>
-
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+<div style="position:sticky;top:0;background:linear-gradient(90deg,#ffffffaa,#eaf3f5aa);backdrop-filter:saturate(140%) blur(6px);">
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 18px;">
+        <img src="/img/logo.png" alt="Ding" style="height:28px;" />
+        <span style="color:#004d53;font-weight:600;">A little goes a long way</span>
     </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+</div>
+<div style="min-height:calc(100vh - 56px);display:flex;align-items:center;justify-content:center;padding:32px;">
+    @Body
 </div>
