@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35208.52
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DingConnect", "DingConnect\DingConnect.csproj", "{55F6FDA8-03E1-47E0-9E35-33BED1FD4685}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DingConnect", "DingConnect\DingConnect.csproj", "{55F6FDA8-03E1-47E0-9E35-33BED1FD4685}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DingTopUp.Core", "DingTopUp.Core\DingTopUp.Core.csproj", "{03BC1C17-331F-4F5C-8670-86ECA00F528B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DingTopUp.Core", "DingTopUp.Core\DingTopUp.Core.csproj", "{03BC1C17-331F-4F5C-8670-86ECA00F528B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DingTopUp.Integration", "DingTopUp.Integration\DingTopUp.Integration.csproj", "{29475B2A-EF04-463C-A72F-5AC4850D059F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DingTopUp.Integration", "DingTopUp.Integration\DingTopUp.Integration.csproj", "{29475B2A-EF04-463C-A72F-5AC4850D059F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
