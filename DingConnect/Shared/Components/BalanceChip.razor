@@ -1,5 +1,22 @@
-﻿<h3>BalanceChip</h3>
+﻿@inject DingTopUp.Integration.IDingApi Api
+
+<span class="balance-chip">@_text</span>
 
 @code {
+    private string _text = "Balance: …";
 
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var r = await Api.GetBalanceAsync();
+            _text = r.ResultCode == 0
+                ? $"Balance: {r.Balance:#,##0.00} {r.CurrencyIso}"
+                : "Balance: unavailable";
+        }
+        catch
+        {
+            _text = "Balance: error";
+        }
+    }
 }

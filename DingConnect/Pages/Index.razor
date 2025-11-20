@@ -7,9 +7,10 @@
         <p style="color:#5b6b75; margin-top:6px;">Select your country and enter a mobile number</p>
     </div>
 
-    <div class="input" style="margin-bottom:10px;">
-        <span style="color:var(--brand-teal); font-weight:600;">🌍</span>
-        <select class="flex-1" @bind="CountryIso" @bind:event="oninput">
+    <!-- Country -->
+    <div class="form-pill" style="margin-bottom:12px;">
+        <span class="icon">🌍</span>
+        <select @bind="CountryIso" @bind:event="oninput">
             <option value="USA">United States (+1)</option>
             <option value="UK">United Kingdom (+44)</option>
             <option value="IN">India (+91)</option>
@@ -17,10 +18,10 @@
         </select>
     </div>
 
-    <div class="input" style="margin-bottom:16px;">
-        <span style="color:var(--brand-teal); font-weight:600;">📞</span>
-        <input class="flex-1" type="tel" placeholder="Mobile Number"
-               @bind="AccountNumber" @bind:event="oninput" onchange="DetectCountry" />
+    <!-- Number -->
+    <div class="form-pill" style="margin-bottom:16px;">
+        <span class="icon">📱</span>
+        <input type="tel" placeholder="Enter number" @bind="AccountNumber" />
     </div>
 
     <button class="brand-btn" disabled="@(!IsValid)">Next</button>
@@ -31,22 +32,7 @@
 </div>
 
 @code {
-    private string CountryIso { get; set; } = "BD";
+    private string CountryIso { get; set; } = "USA";
     private string? AccountNumber { get; set; }
-
-    bool IsValid => !string.IsNullOrWhiteSpace(AccountNumber) && AccountNumber.Length >= 8;
-
-    private void DetectCountry(ChangeEventArgs e)
-    {
-        var input = e.Value?.ToString() ?? string.Empty;
-
-        if (input.StartsWith("+44"))
-            CountryIso = "UK";
-        else if (input.StartsWith("+91"))
-            CountryIso = "IN";
-        else if (input.StartsWith("+880"))
-            CountryIso = "BD";
-        else if (input.StartsWith("+1"))
-            CountryIso = "USA";
-    }
+    bool IsValid => !string.IsNullOrWhiteSpace(AccountNumber) && AccountNumber!.Length >= 8;
 }
