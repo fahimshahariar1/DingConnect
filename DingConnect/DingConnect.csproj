@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>d6b03b2b-2f3e-4c8d-b2a2-47abfce6d9a1</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\img\bg.png" />
+    <Content Remove="wwwroot\img\logo.png" />
+    <Content Remove="wwwroot\img\star.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DingTopUp.Core\DingTopUp.Core.csproj" />
+    <ProjectReference Include="..\DingTopUp.Integration\DingTopUp.Integration.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\img\bg.png" />
+    <None Include="wwwroot\img\logo.png" />
+    <None Include="wwwroot\img\star.png" />
+  </ItemGroup>
+
+</Project>

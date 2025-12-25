@@ -1,0 +1,175 @@
+﻿@page "/products"
+@using System.Text.RegularExpressions
+@using DingConnect.State
+@inject IDingApi DingApi
+@inject NavigationManager Nav
+@inject TopUpState State
+
+<PageTitle>Select plan</PageTitle>
+
+<div class="page-shell">
+    <div class="content-card">
+        <button class="text-link" @onclick="GoBack">← Change number</button>
+
+        <h2 class="content-title">You're sending top-up to</h2>
+
+        <div class="summary-block">
+            <div class="summary-number">@(_rawDisplay ?? "—")</div>
+            <div class="summary-country">@(_countryDisplay ?? "—")</div>
+        </div>
+
+        @if (_loading)
+        {
+            <p class="hint-text">Loading providers and plans…</p>
+        }
+        else if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="error-box">@_error</div>
+        }
+        else if (_provider is null)
+        {
+            <h3 class="section-title">Choose a provider</h3>
+
+            <div class="provider-grid">
+                @foreach (var p in _providers)
+                {
+                    <button class="provider-card" @onclick="@(() => SelectProvider(p))">
+                        @if (!string.IsNullOrWhiteSpace(p.LogoUrl))
+                        {
+                            <img src="@p.LogoUrl" class="provider-logo" />
+                        }
+                        <div class="provider-name">@p.Name</div>
+                        <div class="provider-code">@p.ProviderCode</div>
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            <h3 class="section-title">Available plans</h3>
+
+            <div class="product-grid">
+                @foreach (var p in _products)
+                {
+                    <button class="product-card" @onclick="@(() => SelectProduct(p))">
+                        <div class="product-amount">
+                            @p.Maximum.ReceiveValue <span class="product-currency">@p.Maximum.ReceiveCurrencyIso</span>
+                        </div>
+                        <div class="product-meta">
+                            Pay @p.Maximum.SendValue @p.Maximum.SendCurrencyIso
+                        </div>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // Query fallback (so /products?countryIso=BD&phoneNumber=... still works)
+    [Parameter, SupplyParameterFromQuery(Name = "countryIso")]
+    public string? CountryIsoQuery { get; set; }
+
+    [Parameter, SupplyParameterFromQuery(Name = "phoneNumber")]
+    public string? PhoneNumberQuery { get; set; }
+
+    private bool _loading = true;
+    private string? _error;
+
+    private string? _rawDisplay;
+    private string? _countryDisplay;
+
+    private List<ProviderItem> _providers = new();
+    private ProviderItem? _provider;
+    private List<ProductItem> _products = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _error = null;
+        _providers.Clear();
+        _products.Clear();
+        _provider = null;
+
+        try
+        {
+            // Populate state from query if needed
+            if (string.IsNullOrWhiteSpace(State.CountryIso))
+                State.CountryIso = CountryIsoQuery;
+
+            if (string.IsNullOrWhiteSpace(State.RawPhoneNumber))
+                State.RawPhoneNumber = PhoneNumberQuery;
+
+            if (string.IsNullOrWhiteSpace(State.CountryIso) || string.IsNullOrWhiteSpace(State.RawPhoneNumber))
+            {
+                _error = "Missing country or phone number. Please go back and enter details again.";
+                return;
+            }
+
+            _rawDisplay = State.RawPhoneNumber;
+            _countryDisplay = State.CountryIso;
+
+            State.NormalizedPhoneNumber = PhoneNormalizer.Normalize(State.RawPhoneNumber, State.CountryIso);
+
+            if (string.IsNullOrWhiteSpace(State.NormalizedPhoneNumber))
+            {
+                _error = "Invalid phone number. Please enter a valid number.";
+                return;
+            }
+
+            var providerRes = await DingApi.GetProvidersAsync(State.CountryIso);
+            _providers = providerRes.Items
+                .Where(p => string.Equals(p.CountryIso, State.CountryIso, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var matches = _providers
+                .Where(p => !string.IsNullOrWhiteSpace(p.ValidationRegex)
+                            && Regex.IsMatch(State.NormalizedPhoneNumber, p.ValidationRegex!))
+                .ToList();
+
+            if (matches.Count == 1)
+            {
+                await LoadProducts(matches[0]);
+            }
+            else if (matches.Count > 1)
+            {
+                _providers = matches;
+            }
+            // else keep all _providers
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadProducts(ProviderItem provider)
+    {
+        _provider = provider;
+        State.Provider = provider;
+
+        var res = await DingApi.GetProductsAsync(provider.ProviderCode, State.CountryIso, State.NormalizedPhoneNumber);
+
+        _products = res.Items
+            .OrderBy(x => x.Maximum.SendValue)
+            .ToList();
+    }
+
+    private async Task SelectProvider(ProviderItem provider) => await LoadProducts(provider);
+
+    private void SelectProduct(ProductItem product)
+    {
+        State.Product = product;
+        Nav.NavigateTo("/checkout");
+    }
+
+    private void GoBack()
+    {
+        State.Reset();
+        Nav.NavigateTo("/");
+    }
+}

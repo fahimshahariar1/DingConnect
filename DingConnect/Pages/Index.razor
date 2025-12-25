@@ -1,0 +1,184 @@
+﻿@page "/"
+@using System.ComponentModel.DataAnnotations
+@using DingConnect.State
+@inject NavigationManager NavManager
+@inject TopUpState State
+@inject NavigationManager Nav
+
+
+<PageTitle>Ding Top-up</PageTitle>
+
+<div class="topup-page">
+    <div class="topup-main">
+        <div class="topup-card">
+            <header class="topup-card-header">
+                <div>
+                    <div class="brand-title">Ready to send a top-up?</div>
+                    <p class="brand-subtitle">
+                        Choose a country and enter the mobile number to get started.
+                    </p>
+                </div>
+            </header>
+
+            <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <div class="field-group">
+                    <label>Destination number</label>
+
+                    <div class="input-row">
+                        <button type="button"
+                                class="country-selector"
+                                @onclick="ToggleCountryDropdown">
+                            @if (SelectedCountry is not null)
+                            {
+                                <img src="@SelectedCountry.FlagUrl"
+                                     alt="@SelectedCountry.Name flag" />
+                                <span>@SelectedCountry.DialCode</span>
+                                <span class="country-name">@SelectedCountry.Name</span>
+                            }
+                            else
+                            {
+                                <span class="placeholder-text">Select country</span>
+                            }
+                            <span class="chevron">▾</span>
+                        </button>
+
+                        <input class="phone-input"
+                               @bind="model.PhoneNumber"
+                               placeholder="Enter mobile number" />
+                    </div>
+
+                    <div class="field-errors">
+                        <ValidationMessage For="@(() => model.CountryIso)" />
+                        <ValidationMessage For="@(() => model.PhoneNumber)" />
+                    </div>
+
+                    @if (showCountryDropdown)
+                    {
+                        <div class="country-dropdown" @onclick:stopPropagation="true">
+                            <input class="country-search"
+                                   placeholder="Search country"
+                                   @bind="countrySearch" />
+
+                            <div class="country-list">
+                                @foreach (var c in FilteredCountries)
+                                {
+                                    <button type="button"
+                                            class="country-item"
+                                            @onclick="@(() => SelectCountry(c))">
+                                        <div class="country-item-main">
+                                            <img src="@c.FlagUrl" alt="@c.Name flag" />
+                                            <span>@c.Name</span>
+                                        </div>
+                                        <span class="dial-code">@c.DialCode</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <button type="submit"
+                        class="primary-btn"
+                        disabled="@(!CanSubmit)">
+                    Start top-up
+                </button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private TopUpFormModel model = new();
+    private List<CountryInfo> allCountries = new();
+    private CountryInfo? SelectedCountry;
+    private string countrySearch = string.Empty;
+    private bool showCountryDropdown;
+
+    protected override void OnInitialized()
+    {
+        allCountries = CountryInfo.GetDefaultCountries();
+
+        // Default to Bangladesh as a nice starting point
+        SelectedCountry = allCountries.FirstOrDefault(c => c.Iso2 == "BD");
+        if (SelectedCountry is not null)
+        {
+            model.CountryIso = SelectedCountry.Iso2;
+        }
+
+        // Close dropdown when user clicks anywhere else on the page
+        // (handled in _Host / layout by Blazor default document events)
+    }
+
+    private IEnumerable<CountryInfo> FilteredCountries =>
+        string.IsNullOrWhiteSpace(countrySearch)
+            ? allCountries
+            : allCountries.Where(c =>
+                c.Name.Contains(countrySearch, StringComparison.OrdinalIgnoreCase) ||
+                c.DialCode.Contains(countrySearch, StringComparison.OrdinalIgnoreCase));
+
+    private void ToggleCountryDropdown()
+        => showCountryDropdown = !showCountryDropdown;
+
+    private void SelectCountry(CountryInfo country)
+    {
+        SelectedCountry = country;
+        model.CountryIso = country.Iso2;
+        showCountryDropdown = false;
+        StateHasChanged();
+    }
+
+    private bool CanSubmit =>
+        SelectedCountry is not null &&
+        !string.IsNullOrWhiteSpace(model.PhoneNumber);
+
+    private void HandleValidSubmit()
+    {
+        if (!CanSubmit)
+        {
+            return;
+        }
+
+        var country = model.CountryIso ?? string.Empty;
+        var number = model.PhoneNumber ?? string.Empty;
+
+        // Build products page URL with query string, no extra helpers needed
+        var uri = $"products?countryIso={Uri.EscapeDataString(country)}&phoneNumber={Uri.EscapeDataString(number)}";
+        NavManager.NavigateTo(uri);
+    }
+
+    public class TopUpFormModel
+    {
+        [Required(ErrorMessage = "Please select a country.")]
+        public string? CountryIso { get; set; }
+
+        [Required(ErrorMessage = "Please enter a mobile number.")]
+        [StringLength(20, ErrorMessage = "Number is too long.")]
+        public string? PhoneNumber { get; set; }
+    }
+
+    public class CountryInfo
+    {
+        public string Iso2 { get; set; } = default!;
+        public string Name { get; set; } = default!;
+        public string DialCode { get; set; } = default!;
+
+        // Uses a public flag CDN. Requires internet, but no backend changes.
+        public string FlagUrl => $"https://flagcdn.com/24x18/{Iso2.ToLowerInvariant()}.png";
+
+        public static List<CountryInfo> GetDefaultCountries() => new()
+        {
+            new CountryInfo { Iso2 = "BD", Name = "Bangladesh", DialCode = "+880" },
+            new CountryInfo { Iso2 = "US", Name = "United States", DialCode = "+1" },
+            new CountryInfo { Iso2 = "GB", Name = "United Kingdom", DialCode = "+44" },
+            new CountryInfo { Iso2 = "IN", Name = "India", DialCode = "+91" },
+            new CountryInfo { Iso2 = "PK", Name = "Pakistan", DialCode = "+92" },
+            new CountryInfo { Iso2 = "SA", Name = "Saudi Arabia", DialCode = "+966" },
+            new CountryInfo { Iso2 = "AE", Name = "United Arab Emirates", DialCode = "+971" },
+            new CountryInfo { Iso2 = "CA", Name = "Canada", DialCode = "+1" },
+            new CountryInfo { Iso2 = "MY", Name = "Malaysia", DialCode = "+60" },
+            new CountryInfo { Iso2 = "SG", Name = "Singapore", DialCode = "+65" },
+            // You can add more here as needed. The UI will automatically pick them up.
+        };
+    }
+}

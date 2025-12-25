@@ -1,0 +1,26 @@
+﻿@using DingTopUp.Integration.Api
+@inject IDingApi Api
+
+<span class="balance-chip" style="max-width:600px;white-space:normal;">@_text</span>
+
+@code {
+    private string _text = "Loading balance…";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var r = await Api.GetBalanceAsync();
+
+            var ok = r.ResultCode == 0 || r.ResultCode == 1;
+
+            _text = ok
+                ? $"Balance: {r.Balance:#,##0.00} {r.CurrencyIso}"
+                : $"Balance failed (ResultCode={r.ResultCode}, Errors={string.Join(',', r.ErrorCodes.Select(e => e.Code))})";
+        }
+        catch (Exception ex)
+        {
+            _text = "Balance error: " + ex.Message;
+        }
+    }
+}

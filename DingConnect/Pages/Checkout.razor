@@ -1,0 +1,167 @@
+﻿@page "/checkout"
+@using DingTopUp.Integration.Models
+@using DingConnect.State
+@inject DingTopUp.Integration.Api.IDingApi DingApi
+@inject TopUpState State
+
+<PageTitle>Checkout</PageTitle>
+
+<div class="page-shell">
+    <div class="content-card checkout-card">
+        <h2 class="content-title">Checkout</h2>
+
+        @if (State.Product is null || State.Provider is null || string.IsNullOrWhiteSpace(State.CountryIso) || string.IsNullOrWhiteSpace(State.RawPhoneNumber))
+        {
+            <div class="error-box">Missing selection. Please go back and select a plan.</div>
+        }
+        else
+        {
+            <div class="summary-pill">
+                <div><strong>Number:</strong> @State.RawPhoneNumber</div>
+                <div><strong>Provider:</strong> @State.Provider.Name</div>
+            </div>
+
+            <hr />
+
+            <div class="amount-wrap">
+                <div class="amount-big">@State.Product.Maximum.ReceiveValue @State.Product.Maximum.ReceiveCurrencyIso</div>
+                <div class="amount-sub">Pay @State.Product.Maximum.SendValue @State.Product.Maximum.SendCurrencyIso</div>
+            </div>
+
+            @if (State.Product.LookupBillsRequired)
+            {
+                <div class="error-box" style="margin-top:12px;">
+                    This product requires bill lookup. Demo blocks bill products for now.
+                </div>
+            }
+            else
+            {
+                @if (_ui == UiState.Idle)
+                {
+                    <button class="primary-btn" @onclick="PayAsync" disabled="@_busy">Pay</button>
+                }
+                else if (_ui == UiState.Sending)
+                {
+                    <div class="sending-box">
+                        <div class="spinner"></div>
+                        <div style="flex:1">
+                            <div class="sending-title">Processing…</div>
+                            <div class="sending-sub">ValidateOnly is enabled (demo). Balance won’t be deducted.</div>
+                            <div class="progress-line"><div class="progress-bar"></div></div>
+                        </div>
+                    </div>
+                }
+                else if (_ui == UiState.Success)
+                {
+                    <div class="success-box">
+                        <div class="success-title">✅ Validated</div>
+                        <div class="success-sub">Ding validated the request successfully.</div>
+
+                        <div class="mini-details">
+                            <div><strong>ProcessingState:</strong> @_lastResponse?.TransferRecord?.ProcessingState</div>
+                            <div><strong>SKU:</strong> @_lastResponse?.TransferRecord?.SkuCode</div>
+                            <div><strong>To:</strong> @_lastResponse?.TransferRecord?.AccountNumber</div>
+                        </div>
+
+                        <button class="ghost-btn" @onclick="StartOver">Make another top-up</button>
+                    </div>
+                }
+                else if (_ui == UiState.Failed)
+                {
+                    <div class="error-box" style="margin-top:12px;">
+                        <div style="font-weight:900; margin-bottom:6px;">❌ Failed</div>
+                        <div>@_error</div>
+
+                        @if (_lastResponse?.ErrorCodes is { Count: > 0 })
+                        {
+                            <ul style="margin:10px 0 0 18px;">
+                                @foreach (var e in _lastResponse.ErrorCodes)
+                                {
+                                    <li><strong>@e.Code</strong> @if(!string.IsNullOrWhiteSpace(e.Context)){
+                                    <span>(@e.Context)</span>
+                                }
+                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <button class="primary-btn" style="margin-top:12px;" @onclick="Retry" disabled="@_busy">
+                    Try again
+                </button>
+            }
+        }
+                }
+    </div>
+</div>
+
+@code {
+    private enum UiState { Idle, Sending, Success, Failed }
+
+    private UiState _ui = UiState.Idle;
+    private bool _busy;
+    private string? _error;
+    private SendTransferResponse? _lastResponse;
+
+    private async Task PayAsync()
+    {
+        _busy = true;
+        _error = null;
+        _lastResponse = null;
+        _ui = UiState.Sending;
+        StateHasChanged();
+
+        try
+        {
+            // Always normalize - Ding regex expects prefix (ex: 88016xxxxxxxx)
+            State.NormalizedPhoneNumber = PhoneNormalizer.Normalize(State.RawPhoneNumber!, State.CountryIso!);
+
+            var req = new SendTransferRequest
+            {
+                SkuCode = State.Product!.SkuCode,
+                SendValue = (decimal)State.Product.Maximum.SendValue,
+                SendCurrencyIso = State.Product.Maximum.SendCurrencyIso,
+                AccountNumber = State.NormalizedPhoneNumber!,
+                DistributorRef = "111Integrationtest",
+                ValidateOnly = true,
+                Settings = new List<SettingItem>()
+            };
+
+            var res = await DingApi.SendTransferAsync(req, correlationId: Guid.NewGuid().ToString());
+            _lastResponse = res;
+
+            // Ding success convention: ResultCode == 1
+            if (res.ResultCode == 1)
+                _ui = UiState.Success;
+            else
+            {
+                var codes = res.ErrorCodes is { Count: > 0 }
+                    ? string.Join(", ", res.ErrorCodes.Select(x => $"{x.Code}:{x.Context}"))
+                    : "(no error codes)";
+                _error = $"ResultCode={res.ResultCode}. Errors={codes}";
+                _ui = UiState.Failed;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _ui = UiState.Failed;
+        }
+        finally
+        {
+            _busy = false;
+            StateHasChanged();
+        }
+    }
+
+    private Task Retry() => PayAsync();
+
+    private void StartOver()
+    {
+        _ui = UiState.Idle;
+        _error = null;
+        _lastResponse = null;
+        State.Product = null;
+        State.Provider = null;
+    }
+}
