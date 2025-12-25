@@ -1,4 +1,4 @@
-# DingConnect Demo — International Mobile Top-Up Flow (Blazor)
+# DingConnect Demo — International Mobile Top-Up Flow
 
 A modern end-to-end demo application that simulates an international mobile top-up experience, inspired by real-world telecom aggregation platforms.
 
