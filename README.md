@@ -1,10 +1,10 @@
-<h1>DingConnect Demo — International Mobile Top-Up Flow (Blazor)
+#DingConnect Demo — International Mobile Top-Up Flow (Blazor)
 
 A modern end-to-end demo application that simulates an international mobile top-up experience, inspired by real-world telecom aggregation platforms.
 
 This project focuses on clean architecture, real API integration patterns, and user-centric flow design, while intentionally operating in demo / validation mode only.
 
-✨ What This Project Demonstrates
+##✨What This Project Demonstrates
 
 This application showcases how a real top-up platform works from start to finish:
 
@@ -20,7 +20,7 @@ Clear Success / Failure Feedback
 
 All flows are implemented with production-grade structure, while avoiding real money transfers.
 
-🧠 Key Design Principles
+##🧠Key Design Principles
 
 Safety first
 No real transactions are executed. All transfers use validation-only mode.
@@ -34,7 +34,7 @@ UI, business logic, API integration, and state management are clearly separated.
 Future-proof
 The project is structured so UI or API layers can evolve independently.
 
-🛠 Tech Stack
+##🛠Tech Stack
 
 .NET 8
 
